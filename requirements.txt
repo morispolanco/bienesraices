@@ -4,3 +4,4 @@ plotly
 matplotlib 
 folium 
 geopy
+streamlit-folium
