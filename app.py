@@ -4,6 +4,7 @@ import folium
 import plotly.express as px
 import matplotlib.pyplot as plt
 from streamlit_folium import folium_static
+from streamlit.components.v1 import html
 from geopy.geocoders import Nominatim
 
 # Configuración inicial
@@ -51,22 +52,26 @@ def predecir_precio(model, messages):
         st.error(f"Error al obtener predicción de Together: {response.status_code}")
         return None
 
-# Función para crear un mapa interactivo
+# Función para crear un mapa interactivo y renderizarlo en Streamlit
 def crear_mapa_interactivo(propiedades):
     m = folium.Map(location=[-34.603722, -58.381592], zoom_start=12)
     geolocator = Nominatim(user_agent="geoapiExercises")
-    
+
     for propiedad in propiedades:
-        ubicacion = propiedad["direccion"]
-        location = geolocator.geocode(ubicacion)
-        if location:
-            folium.Marker(
-                location=[location.latitude, location.longitude],
-                popup=f"{propiedad['titulo']}: ${propiedad['precio']}",
-                tooltip="Haz clic para más información"
-            ).add_to(m)
-    
-    folium_static(m)
+        # Verificamos si la clave "direccion" existe
+        ubicacion = propiedad.get("direccion", None)
+        if ubicacion:
+            location = geolocator.geocode(ubicacion)
+            if location:
+                folium.Marker(
+                    location=[location.latitude, location.longitude],
+                    popup=f"{propiedad.get('title', 'Sin título')}: ${propiedad.get('precio', 'N/D')}",
+                    tooltip="Haz clic para más información"
+                ).add_to(m)
+
+    # Renderiza el mapa como HTML en Streamlit
+    map_html = m._repr_html_()
+    html(map_html, height=500)
 
 # Función para generar gráficos de tendencias
 def mostrar_grafico_tendencias(precios, fechas):
@@ -85,15 +90,20 @@ st.write("Busque propiedades disponibles en el mercado y visualice tendencias de
 if st.sidebar.button("Buscar propiedades"):
     query = f"propiedades en {ciudad}"
     resultado = obtener_propiedades(query)
+    
     if resultado:
-        propiedades = resultado.get("organic", [])  # Ajusta esto según los datos que devuelva la API de Serper
-        st.subheader(f"Propiedades en {ciudad}")
-        for propiedad in propiedades[:5]:  # Mostramos solo las primeras 5 propiedades
-            st.write(f"**{propiedad['title']}** - {propiedad['snippet']}")
+        propiedades = resultado.get("organic", [])  # Ajusta esto según los datos que devuelva Serper
+        st.write("Resultado obtenido de Serper:", propiedades)  # Inspeccionamos los datos obtenidos
+        if propiedades:
+            st.subheader(f"Propiedades en {ciudad}")
+            for propiedad in propiedades[:5]:  # Mostramos solo las primeras 5 propiedades
+                st.write(f"**{propiedad['title']}** - {propiedad.get('snippet', 'No hay descripción disponible.')}")
             
-        # Mapa interactivo (puedes adaptar las ubicaciones según los resultados)
-        st.subheader("Mapa de propiedades")
-        crear_mapa_interactivo(propiedades)
+            # Mapa interactivo (puedes adaptar las ubicaciones según los resultados)
+            st.subheader("Mapa de propiedades")
+            crear_mapa_interactivo(propiedades)
+        else:
+            st.write("No se encontraron propiedades.")
     else:
         st.write("No se encontraron propiedades.")
 
