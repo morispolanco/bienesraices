@@ -8,7 +8,7 @@ from streamlit.components.v1 import html
 from geopy.geocoders import Nominatim
 
 # Configuración inicial
-st.set_page_config(page_title="Análisis y Visualización de Propiedades", layout="wide")
+st.set_page_config(page_title="Análisis y Visualización de Propiedades en Ciudad de Guatemala", layout="wide")
 
 # Función para obtener propiedades de la API de Serper
 def obtener_propiedades(query):
@@ -54,7 +54,8 @@ def predecir_precio(model, messages):
 
 # Función para crear un mapa interactivo y renderizarlo en Streamlit
 def crear_mapa_interactivo(propiedades):
-    m = folium.Map(location=[-34.603722, -58.381592], zoom_start=12)
+    # Coordenadas para Ciudad de Guatemala
+    m = folium.Map(location=[14.634915, -90.506882], zoom_start=12)
     geolocator = Nominatim(user_agent="geoapiExercises")
 
     for propiedad in propiedades:
@@ -80,11 +81,11 @@ def mostrar_grafico_tendencias(precios, fechas):
 
 # Barra lateral para seleccionar la ciudad y otros filtros
 st.sidebar.title("Filtros de Búsqueda")
-ciudad = st.sidebar.text_input("Ciudad", "Buenos Aires")
+ciudad = st.sidebar.text_input("Ciudad", "Ciudad de Guatemala")  # Ciudad de Guatemala por defecto
 rango_precio = st.sidebar.slider("Rango de precio", 50000, 1000000, (100000, 500000))
 
 # Búsqueda de propiedades
-st.title("Aplicación de Análisis y Visualización de Propiedades")
+st.title("Aplicación de Análisis y Visualización de Propiedades en Ciudad de Guatemala")
 st.write("Busque propiedades disponibles en el mercado y visualice tendencias de precios.")
 
 if st.sidebar.button("Buscar propiedades"):
