@@ -27,31 +27,6 @@ def obtener_propiedades(query):
         st.error(f"Error al obtener datos de Serper: {response.status_code}")
         return None
 
-# Función para hacer predicciones con la API de Together
-def predecir_precio(model, messages):
-    url = "https://api.together.xyz/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {st.secrets['together_api_key']}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "model": model,
-        "messages": messages,
-        "max_tokens": 2512,
-        "temperature": 0.7,
-        "top_p": 0.7,
-        "top_k": 50,
-        "repetition_penalty": 1,
-        "stop": ["<|eot_id|>"],
-        "stream": False
-    }
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Error al obtener predicción de Together: {response.status_code}")
-        return None
-
 # Función para crear un mapa interactivo y renderizarlo en Streamlit
 def crear_mapa_interactivo(propiedades):
     # Coordenadas para Ciudad de Guatemala
@@ -59,7 +34,6 @@ def crear_mapa_interactivo(propiedades):
     geolocator = Nominatim(user_agent="geoapiExercises")
 
     for propiedad in propiedades:
-        # Verificamos si la clave "direccion" existe
         ubicacion = propiedad.get("direccion", None)
         if ubicacion:
             location = geolocator.geocode(ubicacion)
@@ -73,25 +47,17 @@ def crear_mapa_interactivo(propiedades):
     # Renderiza el mapa como HTML en Streamlit
     folium_static(m)
 
-# Función para generar gráficos de tendencias
-def mostrar_grafico_tendencias(precios, fechas):
-    fig = px.line(x=fechas, y=precios, labels={'x': 'Fecha', 'y': 'Precio'}, title="Tendencia de Precios")
-    st.plotly_chart(fig)
-
 # Función para generar un gráfico de comparación de propiedades
 def mostrar_comparacion_propiedades(propiedades):
-    # Filtrar propiedades con datos de precio
-    propiedades_filtradas = [p for p in propiedades if "precio" in p]
-
-    if propiedades_filtradas:
-        nombres = [p.get("title", "Sin título") for p in propiedades_filtradas]
-        precios = [int(p.get("precio", 0)) for p in propiedades_filtradas]
+    if propiedades:
+        nombres = [p.get("title", "Sin título") for p in propiedades]
+        precios = [int(p.get("precio", 0)) for p in propiedades]
 
         # Generar gráfico de barras comparando los precios
         fig = px.bar(x=nombres, y=precios, labels={'x': 'Propiedad', 'y': 'Precio'}, title="Comparación de Precios de Propiedades")
         st.plotly_chart(fig)
     else:
-        st.write("No hay suficientes propiedades con información de precios para comparar.")
+        st.write("No se seleccionaron propiedades para comparar.")
 
 # Barra lateral para seleccionar la ciudad y otros filtros
 st.sidebar.title("Filtros de Búsqueda")
@@ -111,31 +77,29 @@ if st.sidebar.button("Buscar propiedades"):
         st.write("Resultado obtenido de Serper:", propiedades)  # Inspeccionamos los datos obtenidos
         if propiedades:
             st.subheader(f"Propiedades en {ciudad}")
-            for propiedad in propiedades[:5]:  # Mostramos solo las primeras 5 propiedades
-                st.write(f"**{propiedad['title']}** - {propiedad.get('snippet', 'No hay descripción disponible.')}")
+            seleccionadas = []
+            checkboxes = []
             
+            # Mostrar propiedades con casillas de verificación
+            for propiedad in propiedades:
+                title = propiedad.get('title', 'Sin título')
+                snippet = propiedad.get('snippet', 'No hay descripción disponible.')
+                precio = propiedad.get('precio', 'N/D')
+                check = st.checkbox(f"{title} - {snippet} - Precio: {precio}")
+                checkboxes.append((check, propiedad))
+
             # Mapa interactivo
             st.subheader("Mapa de propiedades")
             crear_mapa_interactivo(propiedades)
 
-            # Comparación de propiedades
-            st.subheader("Comparación de Precios")
-            mostrar_comparacion_propiedades(propiedades)
+            # Botón para comparar propiedades seleccionadas
+            if st.button("Comparar propiedades seleccionadas"):
+                propiedades_seleccionadas = [propiedad for check, propiedad in checkboxes if check]
+                if propiedades_seleccionadas:
+                    mostrar_comparacion_propiedades(propiedades_seleccionadas)
+                else:
+                    st.write("No se seleccionaron propiedades para comparar.")
         else:
             st.write("No se encontraron propiedades.")
     else:
         st.write("No se encontraron propiedades.")
-
-# Predicción de precios
-st.sidebar.title("Predicción de Precios")
-if st.sidebar.button("Predecir tendencia de precios"):
-    if ciudad:
-        modelo = "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"
-        mensajes = [{"role": "user", "content": f"Predice la tendencia de precios de propiedades en {ciudad}"}]
-        prediccion = predecir_precio(modelo, mensajes)
-        if prediccion:
-            contenido = prediccion['choices'][0]['message']['content']
-            st.subheader("Predicción de Precios")
-            st.write(f"Predicción: {contenido}")
-else:
-    st.write("No se seleccionó ninguna ciudad para predicción.")
