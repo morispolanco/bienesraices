@@ -2,9 +2,7 @@ import streamlit as st
 import requests
 import folium
 import plotly.express as px
-import matplotlib.pyplot as plt
 from streamlit_folium import folium_static
-from streamlit.components.v1 import html
 from geopy.geocoders import Nominatim
 
 # Configuración inicial
@@ -78,23 +76,28 @@ if st.sidebar.button("Buscar propiedades"):
         if propiedades:
             st.subheader(f"Propiedades en {ciudad}")
             seleccionadas = []
-            checkboxes = []
+            
+            # Inicializamos el estado de cada propiedad en session_state
+            if 'propiedades_seleccionadas' not in st.session_state:
+                st.session_state.propiedades_seleccionadas = {i: False for i in range(len(propiedades))}
             
             # Mostrar propiedades con casillas de verificación
-            for propiedad in propiedades:
+            for i, propiedad in enumerate(propiedades):
                 title = propiedad.get('title', 'Sin título')
                 snippet = propiedad.get('snippet', 'No hay descripción disponible.')
                 precio = propiedad.get('precio', 'N/D')
-                check = st.checkbox(f"{title} - {snippet} - Precio: {precio}")
-                checkboxes.append((check, propiedad))
-
+                
+                # Mostramos una casilla de verificación por cada propiedad y guardamos su estado
+                st.session_state.propiedades_seleccionadas[i] = st.checkbox(f"{title} - {snippet} - Precio: {precio}", value=st.session_state.propiedades_seleccionadas[i])
+            
             # Mapa interactivo
             st.subheader("Mapa de propiedades")
             crear_mapa_interactivo(propiedades)
 
             # Botón para comparar propiedades seleccionadas
             if st.button("Comparar propiedades seleccionadas"):
-                propiedades_seleccionadas = [propiedad for check, propiedad in checkboxes if check]
+                # Filtrar propiedades seleccionadas por su estado en session_state
+                propiedades_seleccionadas = [propiedades[i] for i, seleccionado in st.session_state.propiedades_seleccionadas.items() if seleccionado]
                 if propiedades_seleccionadas:
                     mostrar_comparacion_propiedades(propiedades_seleccionadas)
                 else:
