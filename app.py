@@ -56,7 +56,7 @@ def predecir_precio(model, messages):
 def crear_mapa_interactivo(propiedades):
     # Coordenadas para Ciudad de Guatemala
     m = folium.Map(location=[14.634915, -90.506882], zoom_start=12)
-    geolocator = Nominatim(user_agent="geoapiExercises") 
+    geolocator = Nominatim(user_agent="geoapiExercises")
 
     for propiedad in propiedades:
         # Verificamos si la clave "direccion" existe
@@ -71,13 +71,27 @@ def crear_mapa_interactivo(propiedades):
                 ).add_to(m)
 
     # Renderiza el mapa como HTML en Streamlit
-    map_html = m._repr_html_()
-    html(map_html, height=500)
+    folium_static(m)
 
 # Función para generar gráficos de tendencias
 def mostrar_grafico_tendencias(precios, fechas):
     fig = px.line(x=fechas, y=precios, labels={'x': 'Fecha', 'y': 'Precio'}, title="Tendencia de Precios")
     st.plotly_chart(fig)
+
+# Función para generar un gráfico de comparación de propiedades
+def mostrar_comparacion_propiedades(propiedades):
+    # Filtrar propiedades con datos de precio
+    propiedades_filtradas = [p for p in propiedades if "precio" in p]
+
+    if propiedades_filtradas:
+        nombres = [p.get("title", "Sin título") for p in propiedades_filtradas]
+        precios = [int(p.get("precio", 0)) for p in propiedades_filtradas]
+
+        # Generar gráfico de barras comparando los precios
+        fig = px.bar(x=nombres, y=precios, labels={'x': 'Propiedad', 'y': 'Precio'}, title="Comparación de Precios de Propiedades")
+        st.plotly_chart(fig)
+    else:
+        st.write("No hay suficientes propiedades con información de precios para comparar.")
 
 # Barra lateral para seleccionar la ciudad y otros filtros
 st.sidebar.title("Filtros de Búsqueda")
@@ -100,9 +114,13 @@ if st.sidebar.button("Buscar propiedades"):
             for propiedad in propiedades[:5]:  # Mostramos solo las primeras 5 propiedades
                 st.write(f"**{propiedad['title']}** - {propiedad.get('snippet', 'No hay descripción disponible.')}")
             
-            # Mapa interactivo (puedes adaptar las ubicaciones según los resultados)
+            # Mapa interactivo
             st.subheader("Mapa de propiedades")
             crear_mapa_interactivo(propiedades)
+
+            # Comparación de propiedades
+            st.subheader("Comparación de Precios")
+            mostrar_comparacion_propiedades(propiedades)
         else:
             st.write("No se encontraron propiedades.")
     else:
@@ -121,12 +139,3 @@ if st.sidebar.button("Predecir tendencia de precios"):
             st.write(f"Predicción: {contenido}")
 else:
     st.write("No se seleccionó ninguna ciudad para predicción.")
-
-# Visualización comparativa (si se necesitan más detalles, puedes expandir esta sección)
-st.sidebar.title("Comparar propiedades")
-if st.sidebar.button("Comparar"):
-    if ciudad:
-        st.subheader("Comparación de Propiedades")
-        st.write("Comparación de precios por metro cuadrado, proximidad a servicios, etc.")
-else:
-    st.write("No hay suficientes datos para comparar.")
