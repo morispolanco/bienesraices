@@ -56,7 +56,7 @@ def predecir_precio(model, messages):
 def crear_mapa_interactivo(propiedades):
     # Coordenadas para Ciudad de Guatemala
     m = folium.Map(location=[14.634915, -90.506882], zoom_start=12)
-    geolocator = Nominatim(user_agent="geoapiExercises")
+    geolocator = Nominatim(user_agent="geoapiExercises") 
 
     for propiedad in propiedades:
         # Verificamos si la clave "direccion" existe
